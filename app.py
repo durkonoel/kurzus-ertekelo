@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
+import json
 
 # --- BEÁLLÍTÁSOK ---
 TABLAZAT_NEVE = "Diakok_Eredmenyei"
@@ -11,7 +12,14 @@ MAX_ONERTEKELES_PONT = 10
 @st.cache_resource 
 def get_gspread_client():
     scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
-    creds = ServiceAccountCredentials.from_json_keyfile_name("secrets.json", scope)
+    
+    # Okos csatlakozás: ha a felhőben vagyunk, a széfből olvassa, ha a gépeden, akkor a fájlból
+    if "google_credentials" in st.secrets:
+        creds_dict = json.loads(st.secrets["google_credentials"])
+        creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
+    else:
+        creds = ServiceAccountCredentials.from_json_keyfile_name("secrets.json", scope)
+        
     client = gspread.authorize(creds)
     return client
 
@@ -31,7 +39,7 @@ try:
     client = get_gspread_client()
     df, sheet = adatok_betoltese(client)
 except Exception as e:
-    st.error(f"Hiba a Google kapcsolódásnál: {e}")
+    st.error(f"Hiba a Google kapcsolódásnál. Részletek: {e}")
     st.stop()
 
 diak_id = st.text_input("Diákazonosító (pl. DIAK01):", max_chars=10)
@@ -71,4 +79,5 @@ if diak_id:
                 st.success("Az önértékelésed sikeresen rögzítve lett a Google Táblázatban!")
                 st.rerun() 
     else:
+        st.error("Nem található ilyen azonosító a rendszerben.")
         st.error("Nem található ilyen azonosító a rendszerben.")
