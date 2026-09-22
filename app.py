@@ -260,4 +260,4 @@ if diak_nev_input:
             summary_rows.append(row_data)
 
         df_summary = pd.DataFrame(summary_rows)
-        st.dataframe(df_summary, use_container_width=True, hide_index=True)rben.")
+        st.dataframe(df_summary, use_container_width=True, hide_index=True)
