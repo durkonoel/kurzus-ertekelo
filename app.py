@@ -103,7 +103,7 @@ def get_occasion_date_from_row2(row2, occ, current_year=2026):
 # ==============================================================================
 # 3. FELÜLET MEGJELENÍTÉSE
 # ==============================================================================
-st.set_page_config(page_title="Önértékelő Rendszer", page_icon="🎓", layout="centered")
+st.set_page_config(page_title="Matek önértékelés", page_icon="🎓", layout="centered")
 
 st.title("🎓 Matek önértékelés")
 st.write("Válaszd ki a csoportodat, majd lépj be a teljes neveddel a mai pontok rögzítéséhez!")
@@ -155,7 +155,7 @@ if diak_nev_input:
                 break
 
     if not student_row_idx:
-        st.error(f"Nem található '{diak_nev_input}' nevű diák a(z) {kivalasztott_csoport} csoportban. Kérlek, ellenőrizd az írásmódot!")
+        st.error(f"Nem található '{diak_nev_input}' nevű diák a(z) {kivalasztott_csoport} csoportban. Kérlek, ellenőrizd az ékezeteket!")
         st.stop()
 
     st.success(f"Bejelentkezve: **{real_student_name}** | Csoport: **{kivalasztott_csoport}**")
