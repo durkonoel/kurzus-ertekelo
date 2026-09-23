@@ -105,7 +105,7 @@ def get_occasion_date_from_row2(row2, occ, current_year=2026):
 # ==============================================================================
 st.set_page_config(page_title="Önértékelő Rendszer", page_icon="🎓", layout="centered")
 
-st.title("🎓 Önértékelő Rendszer")
+st.title("🎓 Matek önértékelés")
 st.write("Válaszd ki a csoportodat, majd lépj be a teljes neveddel a mai pontok rögzítéséhez!")
 st.divider()
 
@@ -231,15 +231,16 @@ if diak_nev_input:
         st.warning(f"ℹ️ **Ma ({ma.strftime('%Y.%m.%d.')}) nincs olyan óra kitűzve, amire pontot lehetne rögzíteni.**")
         st.caption("Az önértékelés mindig kizárólag az adott óra napján érhető el a táblázat 2. sorában megadott dátumok alapján.")
 
-   # ==============================================================================
-    # 4. EDDIGI EREDMÉNYEK ÁTTEKINTÉSE (ÖSSZESÍTŐ TÁBLÁZAT ÉS PONTÖSSZEGZÉS)
+  # ==============================================================================
+    # 4. EDDIGI EREDMÉNYEK ÁTTEKINTÉSE (PONTÖSSZEGZÉS AZ EDDIG MEGSZEREZHETŐ MAXIMUMHOZ)
     # ==============================================================================
     st.divider()
     with st.expander("📊 Összesített eredményeid és órák áttekintése", expanded=True):
         cat_totals = {"J": 0, "A": 0, "B": 0, "V1": 0, "V2": 0}
-        cat_max = {"J": 9, "A": 9, "B": 6, "V1": 3, "V2": 3}
+        cat_max_eddig = {"J": 0, "A": 0, "B": 0, "V1": 0, "V2": 0}
         total_earned = 0
-        total_max = 30
+        total_eddig_max = 0
+        total_kurzus_max = 30
 
         summary_rows = []
         for item in all_occ_status:
@@ -277,36 +278,56 @@ if diak_nev_input:
                     except ValueError:
                         row_data[code] = val_str
 
+            # Az alkalom akkor számít "eddig megszerezhetőnek", ha:
+            # - Már lezárult ("closed") vagy ma aktív ("open"), VAGY
+            # - Már rögzítve lett rá pont (has_points)
+            is_eddig = (item["status"] in ["open", "closed"]) or has_points
+
+            if is_eddig:
+                total_eddig_max += len(occ["cols"])
+                for code, col_idx, label in occ["cols"]:
+                    cat_max_eddig[code] += 1
+
             if has_points:
                 formatted_occ_sum = int(occ_sum) if isinstance(occ_sum, float) and occ_sum.is_integer() else occ_sum
                 row_data["Pontszám"] = f"{formatted_occ_sum} pont"
 
             summary_rows.append(row_data)
 
-        # Százalék és kerekítés számítása
         t_earned_disp = int(total_earned) if isinstance(total_earned, float) and total_earned.is_integer() else total_earned
-        szazalek = round((total_earned / total_max) * 100) if total_max > 0 else 0
+        
+        # Százalék számítása az EDDIG megszerezhető pontokhoz viszonyítva
+        if total_eddig_max > 0:
+            szazalek = round((total_earned / total_eddig_max) * 100)
+            status_text = f"{t_earned_disp} / {total_eddig_max} pont ({szazalek}%)"
+        else:
+            szazalek = 0
+            status_text = f"{t_earned_disp} pont (még nincs lezárt óra)"
 
-        # Kiemelt mérőszám kártyák a táblázat felett
+        # Kiemelt kártyák (KPI) a táblázat felett
         m_col1, m_col2, m_col3, m_col4, m_col5 = st.columns(5)
-        m_col1.metric("Összpontszám", f"{t_earned_disp} / {total_max}", f"{szazalek}%")
-        m_col2.metric("Jelenlét (J)", f"{cat_totals['J']} / {cat_max['J']}")
-        m_col3.metric("Aktivitás (A)", f"{cat_totals['A']} / {cat_max['A']}")
-        m_col4.metric("Brit tudósok (B)", f"{cat_totals['B']} / {cat_max['B']}")
-        m_col5.metric("Vizsgák (V1+V2)", f"{cat_totals['V1'] + cat_totals['V2']} / {cat_max['V1'] + cat_max['V2']}")
+        m_col1.metric("Jelenlegi állás", f"{t_earned_disp} / {total_eddig_max}", f"{szazalek}%")
+        m_col2.metric("Jelenlét (J)", f"{cat_totals['J']} / {cat_max_eddig['J']}" if cat_max_eddig['J'] > 0 else "-")
+        m_col3.metric("Aktivitás (A)", f"{cat_totals['A']} / {cat_max_eddig['A']}" if cat_max_eddig['A'] > 0 else "-")
+        m_col4.metric("Brit tudósok (B)", f"{cat_totals['B']} / {cat_max_eddig['B']}" if cat_max_eddig['B'] > 0 else "-")
+        vizsga_eddig_max = cat_max_eddig['V1'] + cat_max_eddig['V2']
+        m_col5.metric("Vizsgák (V1+V2)", f"{cat_totals['V1'] + cat_totals['V2']} / {vizsga_eddig_max}" if vizsga_eddig_max > 0 else "-")
 
-        st.write("")
+        st.caption(f"📌 A százalék az eddig lezajlott vagy mai órákon megszerezhető maximumhoz ({total_eddig_max} pont) viszonyítva értendő. A teljes kurzus összesen {total_kurzus_max} pontos.")
 
-        # Összesítő sor hozzáadása a táblázat aljához
+        def fmt_cat_cell(code):
+            return f"{cat_totals[code]} / {cat_max_eddig[code]}" if cat_max_eddig[code] > 0 else "-"
+
+        # Összesítő sor a táblázat alján
         total_row = {
             "Alkalom": "⭐ ÖSSZESEN",
             "Dátum": "-",
-            "Státusz": f"{t_earned_disp} / {total_max} pont ({szazalek}%)",
-            "J": f"{cat_totals['J']} / {cat_max['J']}",
-            "A": f"{cat_totals['A']} / {cat_max['A']}",
-            "B": f"{cat_totals['B']} / {cat_max['B']}",
-            "V1": f"{cat_totals['V1']} / {cat_max['V1']}",
-            "V2": f"{cat_totals['V2']} / {cat_max['V2']}",
+            "Státusz": status_text,
+            "J": fmt_cat_cell("J"),
+            "A": fmt_cat_cell("A"),
+            "B": fmt_cat_cell("B"),
+            "V1": fmt_cat_cell("V1"),
+            "V2": fmt_cat_cell("V2"),
             "Pontszám": f"{t_earned_disp} pont"
         }
         summary_rows.append(total_row)
