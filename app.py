@@ -313,7 +313,7 @@ if diak_nev_input:
         vizsga_eddig_max = cat_max_eddig['V1'] + cat_max_eddig['V2']
         m_col5.metric("Vizsgák (V1+V2)", f"{cat_totals['V1'] + cat_totals['V2']} / {vizsga_eddig_max}" if vizsga_eddig_max > 0 else "-")
 
-        st.caption(f"📌 A százalék az eddig lezajlott vagy mai órákon megszerezhető maximumhoz ({total_eddig_max} pont) viszonyítva értendő. A teljes kurzus összesen {total_kurzus_max} pontos.")
+        st.caption(f"📌 A százalék az eddig lezajlott órákon megszerezhető maximumhoz ({total_eddig_max} pont) viszonyítva értendő. A teljes kurzus összesen {total_kurzus_max} pontos.")
 
         def fmt_cat_cell(code):
             return f"{cat_totals[code]} / {cat_max_eddig[code]}" if cat_max_eddig[code] > 0 else "-"
