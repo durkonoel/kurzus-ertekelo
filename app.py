@@ -105,7 +105,7 @@ def get_occasion_date_from_row2(row2, occ, current_year=2026):
 # ==============================================================================
 st.set_page_config(page_title="Önértékelő Rendszer", page_icon="🎓", layout="centered")
 
-st.title("🎓 Tanulói Önértékelő Rendszer")
+st.title("🎓 Önértékelő Rendszer")
 st.write("Válaszd ki a csoportodat, majd lépj be a teljes neveddel a mai pontok rögzítéséhez!")
 st.divider()
 
@@ -136,7 +136,7 @@ if len(all_values) < 4:
     st.stop()
 
 # 2. LÉPÉS: Belépés névvel
-diak_nev_input = st.text_input("2. Add meg a teljes neved (Belépési kód):", placeholder="pl. Bereczki Zoltán")
+diak_nev_input = st.text_input("2. Jelszó:", placeholder="pl. Cérna Géza")
 
 if diak_nev_input:
     keresett_nev = diak_nev_input.strip().lower()
@@ -191,8 +191,8 @@ if diak_nev_input:
     # 3. MAI ÓRA ÉRTÉKELÉSI ŰRLAPJA (CSAK HA MA VAN AZ ÓRA!)
     # ==============================================================================
     if active_today_occ:
-        st.subheader(f"🟢 Mai óra értékelése: {active_today_occ['name']}")
-        st.info("Minden kategóriában 0 vagy 1 pontot adhatsz magadnak. A pontok a mentés után azonnal frissülnek a tanári naplóban.")
+        st.subheader(f"🟢 Óra értékelése: {active_today_occ['name']}")
+        st.info("Minden kategóriában 0 vagy 1 pontot adhatsz magadnak. A pontok a mentés után azonnal frissülnek.")
 
         with st.form("mai_pontozas_form"):
             uj_pontok = {}
@@ -212,20 +212,20 @@ if diak_nev_input:
                         key=f"radio_{code}_{col_idx}"
                     )
 
-            mentes_gomb = st.form_submit_button("💾 Mai pontok mentése a Google Táblázatba", type="primary")
+            mentes_gomb = st.form_submit_button("💾 Pontok mentése", type="primary")
 
             if mentes_gomb:
                 # Szerveroldali biztonsági dátumellenőrzés
                 mentes_napja = get_today_date()
                 if mentes_napja != ma:
-                    st.error("A szerver órája szerint ez az alkalom már lezárult!")
+                    st.error("Ez az alkalom már lezárult!")
                     st.stop()
 
                 with st.spinner("Mentés folyamatban..."):
                     for code, col_idx, label in active_today_occ["cols"]:
                         sheet.update_cell(student_row_idx, col_idx, uj_pontok[code])
 
-                st.success("A mai pontjaidat sikeresen rögzítettük!")
+                st.success("A pontjaidat sikeresen rögzítetted!")
                 st.rerun()
     else:
         st.warning(f"ℹ️ **Ma ({ma.strftime('%Y.%m.%d.')}) nincs olyan óra kitűzve, amire pontot lehetne rögzíteni.**")
@@ -240,7 +240,7 @@ if diak_nev_input:
         for item in all_occ_status:
             occ = item["occ"]
             st_text = {
-                "open": "🟢 Ma aktív (Szerkeszthető)",
+                "open": "🟢 Ma aktív",
                 "closed": "🔒 Lezárult",
                 "future": "⏳ Jövőbeli",
                 "not_set": "⚪ Nincs dátum"
