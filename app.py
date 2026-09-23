@@ -155,7 +155,7 @@ if diak_nev_input:
                 break
 
     if not student_row_idx:
-        st.error(f"Nem található '{diak_nev_input}' nevű diák a(z) {kivalasztott_csoport} csoportban. Kérlek, ellenőrizd az ékezeteket!")
+        st.error(f"Nem található '{diak_nev_input}' nevű diák a(z) {kivalasztott_csoport} csoportban. Kérlek, ellenőrizd az ékezeteket és a csoportot!")
         st.stop()
 
     st.success(f"Bejelentkezve: **{real_student_name}** | Csoport: **{kivalasztott_csoport}**")
