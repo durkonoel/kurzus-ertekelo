@@ -231,33 +231,85 @@ if diak_nev_input:
         st.warning(f"ℹ️ **Ma ({ma.strftime('%Y.%m.%d.')}) nincs olyan óra kitűzve, amire pontot lehetne rögzíteni.**")
         st.caption("Az önértékelés mindig kizárólag az adott óra napján érhető el a táblázat 2. sorában megadott dátumok alapján.")
 
-    # ==============================================================================
-    # 4. EDDIGI EREDMÉNYEK ÁTTEKINTÉSE (ÖSSZESÍTŐ TÁBLÁZAT)
+   # ==============================================================================
+    # 4. EDDIGI EREDMÉNYEK ÁTTEKINTÉSE (ÖSSZESÍTŐ TÁBLÁZAT ÉS PONTÖSSZEGZÉS)
     # ==============================================================================
     st.divider()
     with st.expander("📊 Összesített eredményeid és órák áttekintése", expanded=True):
+        cat_totals = {"J": 0, "A": 0, "B": 0, "V1": 0, "V2": 0}
+        cat_max = {"J": 9, "A": 9, "B": 6, "V1": 3, "V2": 3}
+        total_earned = 0
+        total_max = 30
+
         summary_rows = []
         for item in all_occ_status:
             occ = item["occ"]
             st_text = {
-                "open": "🟢 Ma aktív",
+                "open": "🟢 Ma aktív (Szerkeszthető)",
                 "closed": "🔒 Lezárult",
                 "future": "⏳ Jövőbeli",
                 "not_set": "⚪ Nincs dátum"
-            }[item["status"]]
+            }.get(item["status"], "-")
 
             row_data = {
                 "Alkalom": occ["name"],
                 "Dátum": item["raw_date"] if item["raw_date"] else "-",
                 "Státusz": st_text,
-                "J": "-", "A": "-", "B": "-", "V1": "-", "V2": "-"
+                "J": "-", "A": "-", "B": "-", "V1": "-", "V2": "-",
+                "Pontszám": "-"
             }
+
+            occ_sum = 0
+            has_points = False
 
             for code, col_idx, label in occ["cols"]:
                 c_val = student_scores_row[col_idx - 1] if col_idx - 1 < len(student_scores_row) else ""
-                row_data[code] = c_val if str(c_val).strip() != "" else "-"
+                val_str = str(c_val).strip().replace(",", ".")
+                if val_str != "":
+                    try:
+                        f = float(val_str)
+                        pts = int(f) if f.is_integer() else f
+                        row_data[code] = str(pts)
+                        cat_totals[code] += pts
+                        total_earned += pts
+                        occ_sum += pts
+                        has_points = True
+                    except ValueError:
+                        row_data[code] = val_str
+
+            if has_points:
+                formatted_occ_sum = int(occ_sum) if isinstance(occ_sum, float) and occ_sum.is_integer() else occ_sum
+                row_data["Pontszám"] = f"{formatted_occ_sum} pont"
 
             summary_rows.append(row_data)
+
+        # Százalék és kerekítés számítása
+        t_earned_disp = int(total_earned) if isinstance(total_earned, float) and total_earned.is_integer() else total_earned
+        szazalek = round((total_earned / total_max) * 100) if total_max > 0 else 0
+
+        # Kiemelt mérőszám kártyák a táblázat felett
+        m_col1, m_col2, m_col3, m_col4, m_col5 = st.columns(5)
+        m_col1.metric("Összpontszám", f"{t_earned_disp} / {total_max}", f"{szazalek}%")
+        m_col2.metric("Jelenlét (J)", f"{cat_totals['J']} / {cat_max['J']}")
+        m_col3.metric("Aktivitás (A)", f"{cat_totals['A']} / {cat_max['A']}")
+        m_col4.metric("Brit tudósok (B)", f"{cat_totals['B']} / {cat_max['B']}")
+        m_col5.metric("Vizsgák (V1+V2)", f"{cat_totals['V1'] + cat_totals['V2']} / {cat_max['V1'] + cat_max['V2']}")
+
+        st.write("")
+
+        # Összesítő sor hozzáadása a táblázat aljához
+        total_row = {
+            "Alkalom": "⭐ ÖSSZESEN",
+            "Dátum": "-",
+            "Státusz": f"{t_earned_disp} / {total_max} pont ({szazalek}%)",
+            "J": f"{cat_totals['J']} / {cat_max['J']}",
+            "A": f"{cat_totals['A']} / {cat_max['A']}",
+            "B": f"{cat_totals['B']} / {cat_max['B']}",
+            "V1": f"{cat_totals['V1']} / {cat_max['V1']}",
+            "V2": f"{cat_totals['V2']} / {cat_max['V2']}",
+            "Pontszám": f"{t_earned_disp} pont"
+        }
+        summary_rows.append(total_row)
 
         df_summary = pd.DataFrame(summary_rows)
         st.dataframe(df_summary, use_container_width=True, hide_index=True)
