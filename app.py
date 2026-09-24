@@ -172,22 +172,24 @@ def parse_occasions_from_sheet(all_values):
 st.set_page_config(page_title="Matematika Önértékelő", page_icon="📐", layout="centered")
 
 st.title("📐 Matematika Önértékelő Rendszer")
-st.write("Add meg a csoportodat és a nevedet a pontjaid megtekintéséhez és rögzítéséhez!")
+st.write("Válaszd ki a csoportodat, és add meg a nevedet a belépéshez!")
 st.divider()
 
-col_group, col_name = st.columns([1, 2])
-with col_group:
-    csoport_input_raw = st.text_input("1. Csoport (X, Y, Z, E, Q, R, W):", placeholder="pl. X vagy w", max_chars=2)
-with col_name:
-    diak_nev_input = st.text_input("2. Teljes név (Jelszó / Belépési kód):", placeholder="pl. Bereczki Zoltán")
+# 1. Csoportválasztás legördülő menüvel
+csoport = st.selectbox(
+    "1. Csoport kiválasztása:",
+    options=list(CSOPORT_TABLAZATOK.keys()),
+    index=None,
+    placeholder="Válassz csoportot a listából..."
+)
 
-if csoport_input_raw and diak_nev_input:
-    csoport = csoport_input_raw.strip().upper()
-    
-    if csoport not in CSOPORT_TABLAZATOK:
-        st.error(f"Érvénytelen csoport: '{csoport_input_raw}'. Kérlek, ezek közül válassz: X, Y, Z, E, Q, R vagy W!")
-        st.stop()
-        
+# 2. Jelszóbeírás közvetlenül alatta
+diak_nev_input = st.text_input(
+    "2. Teljes név (Jelszó / Belépési kód):", 
+    placeholder="pl. Bereczki Zoltán"
+)
+
+if csoport and diak_nev_input:
     tablazat_azonosito = CSOPORT_TABLAZATOK[csoport]
 
     # Kapcsolódás a csoporthoz tartozó Google Táblázathoz
@@ -315,7 +317,6 @@ if csoport_input_raw and diak_nev_input:
     # ==============================================================================
     st.divider()
     with st.expander("📊 Összesített eredményeid és órák áttekintése", expanded=True):
-        # A táblázatban szereplő oszloptípusok kigyűjtése sorrendben
         active_codes = []
         for occ in occasions:
             for code, col_idx, label in occ["cols"]:
@@ -358,14 +359,13 @@ if csoport_input_raw and diak_nev_input:
                         f = float(val_str)
                         pts = int(f) if f.is_integer() else f
                         row_data[code] = str(pts)
-                        cat_totals[code] = cat_totals.get(code, 0) + pts
+                        cat_totals[code] += pts
                         total_earned += pts
                         occ_sum += pts
                         has_points = True
                     except ValueError:
                         row_data[code] = val_str
 
-            # Eddig megszerezhetőnek számít, ha lezárult, ma van, vagy van már pontja
             is_eddig = (item["status"] in ["open", "closed"]) or has_points
 
             if is_eddig:
@@ -382,7 +382,6 @@ if csoport_input_raw and diak_nev_input:
 
         t_earned_disp = int(total_earned) if isinstance(total_earned, float) and total_earned.is_integer() else total_earned
         
-        # Százalék az EDDIG megszerezhető maximumhoz képest
         if total_eddig_max > 0:
             szazalek = round((total_earned / total_eddig_max) * 100)
             status_text = f"{t_earned_disp} / {total_eddig_max} pont ({szazalek}%)"
@@ -390,7 +389,7 @@ if csoport_input_raw and diak_nev_input:
             szazalek = 0
             status_text = f"{t_earned_disp} pont (még nincs lezárt óra)"
 
-        # Kiemelt KPI kártyák dinamikus felépítése az adott csoport oszlopai alapján
+        # Kiemelt KPI kártyák
         kpi_cards = [("Jelenlegi állás", f"{t_earned_disp} / {total_eddig_max}", f"{szazalek}%")]
         if "J" in active_codes:
             kpi_cards.append(("Jelenlét (J)", f"{cat_totals['J']} / {cat_max_eddig['J']}" if cat_max_eddig.get('J', 0) > 0 else "-", None))
@@ -417,7 +416,7 @@ if csoport_input_raw and diak_nev_input:
 
         st.caption(f"📌 A százalék az eddig lezajlott vagy mai órákon megszerezhető maximumhoz ({total_eddig_max} pont) viszonyítva értendő. A teljes kurzus összesen {total_kurzus_max} pontos.")
 
-        # Alsó összegző sor a táblázathoz
+        # Alsó összegző sor
         total_row = {
             "Alkalom": "⭐ ÖSSZESEN",
             "Dátum": "-",
