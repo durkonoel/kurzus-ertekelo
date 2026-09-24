@@ -27,7 +27,7 @@ CSOPORT_TABLAZATOK = {
 SCORE_OPTIONS = {
     "J": [0, 1],
     "A": [0, 1, 2],
-    "B": [0, 1, 2],
+    "B": [0, 1,],
     "V1": [0, 1, 2],
     "V2": [0, 1, 2],
     "P": [0, 1, 2],
@@ -35,7 +35,7 @@ SCORE_OPTIONS = {
 }
 
 def get_metric_max(code):
-    return 1 if code == "J" else 2
+    return 1 if code == "J" or "B" else 2
 
 # ==============================================================================
 # 2. SEGÉDFÜGGVÉNYEK ÉS HITELESÍTÉS
