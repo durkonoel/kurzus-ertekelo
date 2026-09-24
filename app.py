@@ -28,14 +28,14 @@ SCORE_OPTIONS = {
     "J": [0, 1],
     "A": [0, 1, 2],
     "B": [0, 1,],
-    "V1": [0, 1, 2],
-    "V2": [0, 1, 2],
+    "V1": [0, 1,],
+    "V2": [0, 1,],
     "P": [0, 1, 2],
     "T": [0, 1, 2]
 }
 
 def get_metric_max(code):
-    return 1 if code == "J" or "B" else 2
+    return 1 if code == "J" or "B" or "V1" or "V2" else 2
 
 # ==============================================================================
 # 2. SEGÉDFÜGGVÉNYEK ÉS HITELESÍTÉS
