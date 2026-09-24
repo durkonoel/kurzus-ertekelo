@@ -187,7 +187,7 @@ csoport = st.selectbox(
 # 2. Jelszóbeírás közvetlenül alatta
 diak_nev_input = st.text_input(
     "2. Jelszó (teljes név):", 
-    placeholder="pl. Bereczki Zoltán"
+    placeholder="Cérna Géza"
 )
 
 if csoport and diak_nev_input:
