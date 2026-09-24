@@ -140,9 +140,9 @@ def parse_occasions_from_sheet(all_values):
 # ==============================================================================
 # 3. FELÜLET MEGJELENÍTÉSE
 # ==============================================================================
-st.set_page_config(page_title="Matematika Önértékelő", page_icon="📐", layout="centered")
+st.set_page_config(page_title="Matek Önértékelő", page_icon="📐", layout="centered")
 
-st.title("📐 Matematika XYZ Önértékelő Rendszer")
+st.title("📐 Matek Önértékelő")
 st.write("Lépj be a teljes neveddel a mai óra pontjainak rögzítéséhez és eredményeid megtekintéséhez!")
 st.divider()
 
