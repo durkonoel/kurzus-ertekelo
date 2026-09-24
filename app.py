@@ -22,8 +22,8 @@ CSOPORT_TABLAZATOK = {
 }
 
 # Pontozási opciók:
-# - Jelenlét: 0 vagy 1 pont
-# - Aktivitás, Brit tudósok, Vizsgák, Projekt, Társasjáték: 0, 1 vagy 2 pont
+# - J, B, V1, V2: 0 vagy 1 pont
+# - A, P, T: 0, 1 vagy 2 pont
 SCORE_OPTIONS = {
     "J": [0, 1],
     "A": [0, 1, 2],
@@ -34,8 +34,9 @@ SCORE_OPTIONS = {
     "T": [0, 1, 2]
 }
 
+# A feladattípushoz tartozó maximum pontot közvetlenül a SCORE_OPTIONS-ból olvassuk ki
 def get_metric_max(code):
-    return 1 if code == "J" or "B" or "V1" or "V2" else 2
+    return max(SCORE_OPTIONS.get(code, [0, 1]))
 
 # ==============================================================================
 # 2. SEGÉDFÜGGVÉNYEK ÉS HITELESÍTÉS
@@ -186,7 +187,7 @@ csoport = st.selectbox(
 # 2. Jelszóbeírás közvetlenül alatta
 diak_nev_input = st.text_input(
     "2. Jelszó (teljes név):", 
-    placeholder="pl. Cérna Géza"
+    placeholder="pl. Bereczki Zoltán"
 )
 
 if csoport and diak_nev_input:
@@ -204,7 +205,6 @@ if csoport and diak_nev_input:
         st.stop()
 
     # Megfelelő munkalap/fül megnyitása:
-    # Ha van külön 'X', 'Y' stb. nevű fül, azt nyitja meg, egyébként az első lapot veszi
     elerheto_lapok = spreadsheet.worksheets()
     match_sheet = next((ws for ws in elerheto_lapok if ws.title.strip().upper() == csoport), None)
     sheet = match_sheet if match_sheet is not None else elerheto_lapok[0]
@@ -269,7 +269,7 @@ if csoport and diak_nev_input:
     # ==============================================================================
     if active_today_occ:
         st.subheader(f"🟢 Mai óra értékelése: {active_today_occ['name']} ({active_today_occ['raw_date']})")
-        st.info("Jelenlét: 0 vagy 1 pont. Minden más kategóriában 0, 1 vagy 2 pont adható.")
+        st.info("J, B, V1 és V2 esetén 0 vagy 1 pont adható. Aktivitás (A), Projekt (P) és Társasjáték (T) esetén 0, 1 vagy 2 pont adható.")
 
         with st.form("mai_pontozas_form"):
             uj_pontok = {}
@@ -277,7 +277,7 @@ if csoport and diak_nev_input:
 
             for i, (code, col_idx, label) in enumerate(active_today_occ["cols"]):
                 jelenlegi_ertek = student_scores_row[col_idx - 1] if col_idx - 1 < len(student_scores_row) else ""
-                options = SCORE_OPTIONS.get(code, [0, 1, 2])
+                options = SCORE_OPTIONS.get(code, [0, 1])
                 
                 try:
                     default_val = int(str(jelenlegi_ertek).strip())
