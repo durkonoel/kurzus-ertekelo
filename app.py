@@ -169,9 +169,9 @@ def parse_occasions_from_sheet(all_values):
 # ==============================================================================
 # 3. FELÜLET MEGJELENÍTÉSE ÉS BELÉPÉS
 # ==============================================================================
-st.set_page_config(page_title="Matematika Önértékelő", page_icon="📐", layout="centered")
+st.set_page_config(page_title="Matek Önértékelő", page_icon="📐", layout="centered")
 
-st.title("📐 Matematika Önértékelő Rendszer")
+st.title("📐 Matek Önértékelő")
 st.write("Válaszd ki a csoportodat, és add meg a nevedet a belépéshez!")
 st.divider()
 
@@ -185,8 +185,8 @@ csoport = st.selectbox(
 
 # 2. Jelszóbeírás közvetlenül alatta
 diak_nev_input = st.text_input(
-    "2. Teljes név (Jelszó / Belépési kód):", 
-    placeholder="pl. Bereczki Zoltán"
+    "2. Jelszó (teljes név):", 
+    placeholder="pl. Cérna Géza"
 )
 
 if csoport and diak_nev_input:
@@ -212,7 +212,7 @@ if csoport and diak_nev_input:
     all_values = sheet.get_all_values()
 
     if len(all_values) < 4:
-        st.warning("A munkalap nem tartalmaz elegendő adatot.")
+        st.warning("A táblázat nem tartalmaz elegendő adatot.")
         st.stop()
 
     # Alkalmak felismerése a 2. és 3. sorból
@@ -234,10 +234,10 @@ if csoport and diak_nev_input:
                 break
 
     if not student_row_idx:
-        st.error(f"Nem található '{diak_nev_input}' nevű diák a(z) **{csoport}** csoportban ({sheet.title} fül). Kérlek, ellenőrizd az írásmódot!")
+        st.error(f"Nem található '{diak_nev_input}' nevű diák a(z) **{csoport}** csoportban. Kérlek, ellenőrizd az írásmódot és a csoportot!")
         st.stop()
 
-    st.success(f"Bejelentkezve: **{real_student_name}** | Csoport: **{csoport}** ({sheet.title})")
+    st.success(f"Bejelentkezve: **{real_student_name}** | Csoport: **{csoport}**")
 
     # Dátumok és státuszok kiértékelése
     ma = get_today_date()
@@ -306,7 +306,7 @@ if csoport and diak_nev_input:
                     for code, col_idx, label in active_today_occ["cols"]:
                         sheet.update_cell(student_row_idx, col_idx, uj_pontok[code])
 
-                st.success("A mai pontjaidat sikeresen rögzítettük!")
+                st.success("A pontjaidat sikeresen rögzítettük!")
                 st.rerun()
     else:
         st.warning(f"ℹ️ **Ma ({ma.strftime('%Y.%m.%d.')}) nincs olyan óra kitűzve a(z) {csoport} csoportnak, amire pontot lehetne rögzíteni.**")
@@ -333,7 +333,7 @@ if csoport and diak_nev_input:
         for item in all_occ_status:
             occ = item["occ"]
             st_text = {
-                "open": "🟢 Ma aktív (Szerkeszthető)",
+                "open": "🟢 Ma aktív",
                 "closed": "🔒 Lezárult",
                 "future": "⏳ Jövőbeli",
                 "not_set": "⚪ Nincs dátum"
@@ -414,7 +414,7 @@ if csoport and diak_nev_input:
             else:
                 cols_kpi[idx].metric(title, val)
 
-        st.caption(f"📌 A százalék az eddig lezajlott vagy mai órákon megszerezhető maximumhoz ({total_eddig_max} pont) viszonyítva értendő. A teljes kurzus összesen {total_kurzus_max} pontos.")
+        st.caption(f"📌 A százalék az eddigi órákon megszerezhető maximumhoz ({total_eddig_max} pont) viszonyítva értendő. A teljes kurzus összesen {total_kurzus_max} pontos.")
 
         # Alsó összegző sor
         total_row = {
