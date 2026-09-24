@@ -10,13 +10,18 @@ import re
 # ==============================================================================
 # 1. BEÁLLÍTÁSOK
 # ==============================================================================
-# A Google Drive-on lévő Google Táblázat PONTOS neve (vagy az URL-ből kimásolt ID-ja):
-TABLAZAT_AZONOSITO = "XYZjelenlét"
+# A csoportok megjelenített neve és a hozzájuk tartozó Google Táblázat pontos neve (vagy ID-ja):
+CSOPORTOK = {
+    "XYZ csoport": "XYZjelenlét",
+    "EQ csoport": "EQjelenlét",
+    "W csoport": "Wjelenlét",
+    "R csoport": "Rjelenlét",
+}
 
 # ==============================================================================
 # 2. SEGÉDFÜGGVÉNYEK ÉS HITELESÍTÉS
 # ==============================================================================
-@st.cache_resource 
+@st.cache_resource
 def get_gspread_client():
     scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
     if "google_credentials" in st.secrets:
@@ -140,35 +145,47 @@ def parse_occasions_from_sheet(all_values):
 # ==============================================================================
 # 3. FELÜLET MEGJELENÍTÉSE
 # ==============================================================================
-st.set_page_config(page_title="Matek Önértékelő", page_icon="📐", layout="centered")
+st.set_page_config(page_title="Matematika Önértékelő", page_icon="📐", layout="centered")
 
-st.title("📐 Matek Önértékelő")
+st.title("📐 Matematika Önértékelő Rendszer")
 st.write("Lépj be a teljes neveddel a mai óra pontjainak rögzítéséhez és eredményeid megtekintéséhez!")
 st.divider()
 
-# Kapcsolódás a táblázathoz
+# Csoport kiválasztása
+if len(CSOPORTOK) > 1:
+    kivalasztott_csoport_nev = st.selectbox(
+        "Csoport kiválasztása:",
+        options=list(CSOPORTOK.keys()),
+        index=0
+    )
+else:
+    kivalasztott_csoport_nev = list(CSOPORTOK.keys())[0]
+
+tablazat_azonosito = CSOPORTOK[kivalasztott_csoport_nev]
+
+# Kapcsolódás a kiválasztott csoporthoz tartozó Google Táblázathoz
 try:
     client = get_gspread_client()
     try:
-        spreadsheet = client.open_by_key(TABLAZAT_AZONOSITO)
+        spreadsheet = client.open_by_key(tablazat_azonosito)
     except Exception:
-        spreadsheet = client.open(TABLAZAT_AZONOSITO)
+        spreadsheet = client.open(tablazat_azonosito)
     elerheto_lapok = [ws.title for ws in spreadsheet.worksheets()]
 except Exception as e:
-    st.error(f"Hiba történt a Google Táblázathoz kapcsolódáskor: {e}")
+    st.error(f"Hiba történt a(z) '{kivalasztott_csoport_nev}' táblázathoz kapcsolódáskor: {e}")
     st.stop()
 
-# Ha több munkalap van (pl. X, Y, Z külön fülek), választó jelenik meg; ha csak egy, azt automatikusan betölti
+# Ha a csoport táblázatán belül több munkalap/fül is van
 if len(elerheto_lapok) > 1:
-    kivalasztott_csoport = st.selectbox(
-        "Csoport / Munkalap kiválasztása:",
+    kivalasztott_lap = st.selectbox(
+        "Munkalap kiválasztása:",
         options=elerheto_lapok,
         index=0
     )
 else:
-    kivalasztott_csoport = elerheto_lapok[0]
+    kivalasztott_lap = elerheto_lapok[0]
 
-sheet = spreadsheet.worksheet(kivalasztott_csoport)
+sheet = spreadsheet.worksheet(kivalasztott_lap)
 all_values = sheet.get_all_values()
 
 if len(all_values) < 4:
@@ -198,10 +215,10 @@ if diak_nev_input:
                 break
 
     if not student_row_idx:
-        st.error(f"Nem található '{diak_nev_input}' nevű diák a névsorban. Kérlek, ellenőrizd az írásmódot!")
+        st.error(f"Nem található '{diak_nev_input}' nevű diák a(z) '{kivalasztott_csoport_nev}' névsorában. Kérlek, ellenőrizd az írásmódot vagy a választott csoportot!")
         st.stop()
 
-    st.success(f"Bejelentkezve: **{real_student_name}**")
+    st.success(f"Bejelentkezve: **{real_student_name}** ({kivalasztott_csoport_nev})")
 
     # Dátumok és státuszok kiértékelése
     ma = get_today_date()
