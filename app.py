@@ -34,7 +34,7 @@ SCORE_OPTIONS = {
     "T": [0, 1, 2]
 }
 
-# A feladattípushoz tartozó maximum pontot közvetlenül a SCORE_OPTIONS-ból olvassuk ki
+# A maximum pontot közvetlenül a SCORE_OPTIONS-ból vesszük:
 def get_metric_max(code):
     return max(SCORE_OPTIONS.get(code, [0, 1]))
 
@@ -269,7 +269,7 @@ if csoport and diak_nev_input:
     # ==============================================================================
     if active_today_occ:
         st.subheader(f"🟢 Mai óra értékelése: {active_today_occ['name']} ({active_today_occ['raw_date']})")
-        st.info("J, B, V1 és V2 esetén 0 vagy 1 pont adható. Aktivitás (A), Projekt (P) és Társasjáték (T) esetén 0, 1 vagy 2 pont adható.")
+        st.info("Kérlek, add meg a mai órai pontjaidat az alábbi mezőkben:")
 
         with st.form("mai_pontozas_form"):
             uj_pontok = {}
@@ -389,7 +389,25 @@ if csoport and diak_nev_input:
             szazalek = 0
             status_text = f"{t_earned_disp} pont (még nincs lezárt óra)"
 
-        # Kiemelt KPI kártyák
+        # ==============================================================================
+        # KIEMELT KPI KÁRTYÁK (SZÖVEGLEVÁGÁS ELLENI VÉDELEMMEL, TÖBB SORBAN)
+        # ==============================================================================
+        # CSS stílus a levágás (...) kiküszöbölésére
+        st.markdown("""
+        <style>
+        div[data-testid="stMetricValue"] {
+            font-size: 1.5rem !important;
+            overflow: visible !important;
+            text-overflow: unset !important;
+            white-space: normal !important;
+        }
+        div[data-testid="stMetricLabel"] {
+            overflow: visible !important;
+            white-space: normal !important;
+        }
+        </style>
+        """, unsafe_allow_html=True)
+
         kpi_cards = [("Jelenlegi állás", f"{t_earned_disp} / {total_eddig_max}", f"{szazalek}%")]
         if "J" in active_codes:
             kpi_cards.append(("Jelenlét (J)", f"{cat_totals['J']} / {cat_max_eddig['J']}" if cat_max_eddig.get('J', 0) > 0 else "-", None))
@@ -406,17 +424,20 @@ if csoport and diak_nev_input:
             v_max = cat_max_eddig.get('V1', 0) + cat_max_eddig.get('V2', 0)
             kpi_cards.append(("Vizsgák (V1+V2)", f"{v_earned} / {v_max}" if v_max > 0 else "-", None))
 
-        cols_kpi = st.columns(len(kpi_cards))
-        for idx, card in enumerate(kpi_cards):
-            title, val, delta = card
-            if delta:
-                cols_kpi[idx].metric(title, val, delta)
-            else:
-                cols_kpi[idx].metric(title, val)
+        # Soronként maximum 3 kártyát jelenítünk meg, így mindegyiknek bőven van helye és sosem lesz '...'
+        for i in range(0, len(kpi_cards), 3):
+            row_cards = kpi_cards[i:i + 3]
+            cols = st.columns(3)
+            for idx, card in enumerate(row_cards):
+                title, val, delta = card
+                if delta:
+                    cols[idx].metric(title, val, delta)
+                else:
+                    cols[idx].metric(title, val)
 
         st.caption(f"📌 A százalék az eddigi órákon megszerezhető maximumhoz ({total_eddig_max} pont) viszonyítva értendő. A teljes kurzus összesen {total_kurzus_max} pontos.")
 
-        # Alsó összegző sor
+        # Alsó összegző sor a táblázathoz
         total_row = {
             "Alkalom": "⭐ ÖSSZESEN",
             "Dátum": "-",
