@@ -10,18 +10,37 @@ import re
 # ==============================================================================
 # 1. BEÁLLÍTÁSOK
 # ==============================================================================
-# A csoportok megjelenített neve és a hozzájuk tartozó Google Táblázat pontos neve (vagy ID-ja):
-CSOPORTOK = {
-    "XYZ csoport": "XYZjelenlét",
-    "EQ csoport": "EQjelenlét",
-    "W csoport": "Wjelenlét",
-    "R csoport": "Rjelenlét",
+# A csoportok összerendelése a hozzájuk tartozó Google Táblázat nevével (vagy ID-jával):
+CSOPORT_TABLAZATOK = {
+    "X": "XYZjelenlét",
+    "Y": "XYZjelenlét",
+    "Z": "XYZjelenlét",
+    "E": "EQjelenlét",
+    "Q": "EQjelenlét",
+    "W": "Wjelenlét",
+    "R": "Rjelenlét"
 }
+
+# Pontozási opciók:
+# - Jelenlét: 0 vagy 1 pont
+# - Aktivitás, Brit tudósok, Vizsgák, Projekt, Társasjáték: 0, 1 vagy 2 pont
+SCORE_OPTIONS = {
+    "J": [0, 1],
+    "A": [0, 1, 2],
+    "B": [0, 1, 2],
+    "V1": [0, 1, 2],
+    "V2": [0, 1, 2],
+    "P": [0, 1, 2],
+    "T": [0, 1, 2]
+}
+
+def get_metric_max(code):
+    return 1 if code == "J" else 2
 
 # ==============================================================================
 # 2. SEGÉDFÜGGVÉNYEK ÉS HITELESÍTÉS
 # ==============================================================================
-@st.cache_resource
+@st.cache_resource 
 def get_gspread_client():
     scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
     if "google_credentials" in st.secrets:
@@ -80,8 +99,8 @@ def get_today_date():
 
 def parse_occasions_from_sheet(all_values):
     """
-    Dinamikusan felismeri mind a 22 alkalmat a 2. sorban szereplő dátumok
-    és a 3. sorban lévő fejlécek (J, A, B, V1, V2) alapján.
+    Dinamikusan felismeri az alkalmakat a 2. sorban szereplő dátumok
+    és a 3. sorban lévő fejlécek (J, A, B, V1, V2, P, T) alapján.
     """
     if len(all_values) < 3:
         return []
@@ -96,7 +115,9 @@ def parse_occasions_from_sheet(all_values):
         "A": "Aktivitás (A)",
         "B": "Brit tudósok (B)",
         "V1": "1. vizsga (V1)",
-        "V2": "2. vizsga (V2)"
+        "V2": "2. vizsga (V2)",
+        "P": "Projekt (P)",
+        "T": "Társasjáték (T)"
     }
     
     for col_idx in range(1, len(row3)):
@@ -107,7 +128,7 @@ def parse_occasions_from_sheet(all_values):
         date_raw = row2[col_idx] if col_idx < len(row2) else ""
         date_raw_str = str(date_raw).strip() if date_raw is not None else ""
         
-        if metric_str not in ["J", "A", "B", "V1", "V2"]:
+        if metric_str not in label_map:
             continue
             
         # Új alkalom kezdődik, ha van dátum a 2. sorban, vagy ha 'J' oszlop következik
@@ -136,6 +157,9 @@ def parse_occasions_from_sheet(all_values):
         if "V1" in metric_str or "V2" in metric_str:
             if "(Vizsga)" not in current_occ["name"]:
                 current_occ["name"] = f"{current_occ['id']}. alkalom (Vizsga)"
+        elif "P" in metric_str or "T" in metric_str:
+            if "(Projekt/Társas)" not in current_occ["name"] and "(Vizsga)" not in current_occ["name"]:
+                current_occ["name"] = f"{current_occ['id']}. alkalom (Projekt/Társas)"
                 
     if current_occ is not None and current_occ["cols"]:
         occasions.append(current_occ)
@@ -143,82 +167,75 @@ def parse_occasions_from_sheet(all_values):
     return occasions
 
 # ==============================================================================
-# 3. FELÜLET MEGJELENÍTÉSE
+# 3. FELÜLET MEGJELENÍTÉSE ÉS BELÉPÉS
 # ==============================================================================
-st.set_page_config(page_title="Matek Önértékelő", page_icon="📐", layout="centered")
+st.set_page_config(page_title="Matematika Önértékelő", page_icon="📐", layout="centered")
 
-st.title("📐 Matek Önértékelő")
-st.write("Lépj be a teljes neveddel a mai óra pontjainak rögzítéséhez és eredményeid megtekintéséhez!")
+st.title("📐 Matematika Önértékelő Rendszer")
+st.write("Add meg a csoportodat és a nevedet a pontjaid megtekintéséhez és rögzítéséhez!")
 st.divider()
 
-# Csoport kiválasztása
-if len(CSOPORTOK) > 1:
-    kivalasztott_csoport_nev = st.selectbox(
-        "Csoport kiválasztása:",
-        options=list(CSOPORTOK.keys()),
-        index=0
-    )
-else:
-    kivalasztott_csoport_nev = list(CSOPORTOK.keys())[0]
+col_group, col_name = st.columns([1, 2])
+with col_group:
+    csoport_input_raw = st.text_input("1. Csoport (X, Y, Z, E, Q, R, W):", placeholder="pl. X vagy w", max_chars=2)
+with col_name:
+    diak_nev_input = st.text_input("2. Teljes név (Jelszó / Belépési kód):", placeholder="pl. Bereczki Zoltán")
 
-tablazat_azonosito = CSOPORTOK[kivalasztott_csoport_nev]
+if csoport_input_raw and diak_nev_input:
+    csoport = csoport_input_raw.strip().upper()
+    
+    if csoport not in CSOPORT_TABLAZATOK:
+        st.error(f"Érvénytelen csoport: '{csoport_input_raw}'. Kérlek, ezek közül válassz: X, Y, Z, E, Q, R vagy W!")
+        st.stop()
+        
+    tablazat_azonosito = CSOPORT_TABLAZATOK[csoport]
 
-# Kapcsolódás a kiválasztott csoporthoz tartozó Google Táblázathoz
-try:
-    client = get_gspread_client()
+    # Kapcsolódás a csoporthoz tartozó Google Táblázathoz
     try:
-        spreadsheet = client.open_by_key(tablazat_azonosito)
-    except Exception:
-        spreadsheet = client.open(tablazat_azonosito)
-    elerheto_lapok = [ws.title for ws in spreadsheet.worksheets()]
-except Exception as e:
-    st.error(f"Hiba történt a(z) '{kivalasztott_csoport_nev}' táblázathoz kapcsolódáskor: {e}")
-    st.stop()
+        client = get_gspread_client()
+        try:
+            spreadsheet = client.open_by_key(tablazat_azonosito)
+        except Exception:
+            spreadsheet = client.open(tablazat_azonosito)
+    except Exception as e:
+        st.error(f"Hiba történt a(z) '{tablazat_azonosito}' táblázathoz kapcsolódáskor: {e}")
+        st.stop()
 
-# Ha a csoport táblázatán belül több munkalap/fül is van
-if len(elerheto_lapok) > 1:
-    kivalasztott_lap = st.selectbox(
-        "Munkalap kiválasztása:",
-        options=elerheto_lapok,
-        index=0
-    )
-else:
-    kivalasztott_lap = elerheto_lapok[0]
+    # Megfelelő munkalap/fül megnyitása:
+    # Ha van külön 'X', 'Y' stb. nevű fül, azt nyitja meg, egyébként az első lapot veszi
+    elerheto_lapok = spreadsheet.worksheets()
+    match_sheet = next((ws for ws in elerheto_lapok if ws.title.strip().upper() == csoport), None)
+    sheet = match_sheet if match_sheet is not None else elerheto_lapok[0]
+    
+    all_values = sheet.get_all_values()
 
-sheet = spreadsheet.worksheet(kivalasztott_lap)
-all_values = sheet.get_all_values()
+    if len(all_values) < 4:
+        st.warning("A munkalap nem tartalmaz elegendő adatot.")
+        st.stop()
 
-if len(all_values) < 4:
-    st.warning("A munkalap nem tartalmaz elegendő adatot.")
-    st.stop()
+    # Alkalmak felismerése a 2. és 3. sorból
+    occasions = parse_occasions_from_sheet(all_values)
 
-# Alkalmak felismerése a 2. és 3. sorból
-occasions = parse_occasions_from_sheet(all_values)
-
-# Belépés névvel
-diak_nev_input = st.text_input("Add meg a teljes neved (Belépési kód):", placeholder="pl. Bereczki Zoltán")
-
-if diak_nev_input:
+    # Diák keresése a névsorban (4. sortól lefelé)
     keresett_nev = diak_nev_input.strip().lower()
     student_row_idx = None
     real_student_name = ""
     student_scores_row = []
 
-    # Diák kikeresése az 1. oszlopból (4. sortól lefelé)
     for r_idx in range(3, len(all_values)):
         row = all_values[r_idx]
         if row and row[0]:
             if str(row[0]).strip().lower() == keresett_nev:
-                student_row_idx = r_idx + 1  # 1-alapú index Google Sheets íráshoz
+                student_row_idx = r_idx + 1  # 1-alapú index
                 real_student_name = str(row[0]).strip()
                 student_scores_row = row
                 break
 
     if not student_row_idx:
-        st.error(f"Nem található '{diak_nev_input}' nevű diák a(z) '{kivalasztott_csoport_nev}' névsorában. Kérlek, ellenőrizd az írásmódot vagy a választott csoportot!")
+        st.error(f"Nem található '{diak_nev_input}' nevű diák a(z) **{csoport}** csoportban ({sheet.title} fül). Kérlek, ellenőrizd az írásmódot!")
         st.stop()
 
-    st.success(f"Bejelentkezve: **{real_student_name}** ({kivalasztott_csoport_nev})")
+    st.success(f"Bejelentkezve: **{real_student_name}** | Csoport: **{csoport}** ({sheet.title})")
 
     # Dátumok és státuszok kiértékelése
     ma = get_today_date()
@@ -250,7 +267,7 @@ if diak_nev_input:
     # ==============================================================================
     if active_today_occ:
         st.subheader(f"🟢 Mai óra értékelése: {active_today_occ['name']} ({active_today_occ['raw_date']})")
-        st.info("Minden kategóriában 0 vagy 1 pontot adhatsz magadnak. A mentés után a pontjaid azonnal bekerülnek a táblázatba.")
+        st.info("Jelenlét: 0 vagy 1 pont. Minden más kategóriában 0, 1 vagy 2 pont adható.")
 
         with st.form("mai_pontozas_form"):
             uj_pontok = {}
@@ -258,12 +275,18 @@ if diak_nev_input:
 
             for i, (code, col_idx, label) in enumerate(active_today_occ["cols"]):
                 jelenlegi_ertek = student_scores_row[col_idx - 1] if col_idx - 1 < len(student_scores_row) else ""
-                default_idx = 1 if str(jelenlegi_ertek).strip() == "1" else 0
+                options = SCORE_OPTIONS.get(code, [0, 1, 2])
+                
+                try:
+                    default_val = int(str(jelenlegi_ertek).strip())
+                    default_idx = options.index(default_val) if default_val in options else 0
+                except (ValueError, TypeError):
+                    default_idx = 0
 
                 with cols[i]:
                     uj_pontok[code] = st.radio(
                         label,
-                        options=[0, 1],
+                        options=options,
                         index=default_idx,
                         horizontal=True,
                         key=f"radio_{code}_{col_idx}"
@@ -272,7 +295,7 @@ if diak_nev_input:
             mentes_gomb = st.form_submit_button("💾 Mai pontok mentése a Google Táblázatba", type="primary")
 
             if mentes_gomb:
-                # Szerveroldali biztonsági ellenőrzés
+                # Szerveroldali biztonsági dátumellenőrzés
                 if get_today_date() != ma:
                     st.error("A szerver órája szerint ez az alkalom már lezárult!")
                     st.stop()
@@ -284,7 +307,7 @@ if diak_nev_input:
                 st.success("A mai pontjaidat sikeresen rögzítettük!")
                 st.rerun()
     else:
-        st.warning(f"ℹ️ **Ma ({ma.strftime('%Y.%m.%d.')}) nincs olyan óra kitűzve, amire pontot lehetne rögzíteni.**")
+        st.warning(f"ℹ️ **Ma ({ma.strftime('%Y.%m.%d.')}) nincs olyan óra kitűzve a(z) {csoport} csoportnak, amire pontot lehetne rögzíteni.**")
         st.caption("Az önértékelés kizárólag az adott óra napján érhető el a táblázatban megadott dátumok alapján.")
 
     # ==============================================================================
@@ -292,11 +315,18 @@ if diak_nev_input:
     # ==============================================================================
     st.divider()
     with st.expander("📊 Összesített eredményeid és órák áttekintése", expanded=True):
-        cat_totals = {"J": 0, "A": 0, "B": 0, "V1": 0, "V2": 0}
-        cat_max_eddig = {"J": 0, "A": 0, "B": 0, "V1": 0, "V2": 0}
+        # A táblázatban szereplő oszloptípusok kigyűjtése sorrendben
+        active_codes = []
+        for occ in occasions:
+            for code, col_idx, label in occ["cols"]:
+                if code not in active_codes:
+                    active_codes.append(code)
+
+        cat_totals = {code: 0 for code in active_codes}
+        cat_max_eddig = {code: 0 for code in active_codes}
         total_earned = 0
         total_eddig_max = 0
-        total_kurzus_max = sum(len(o["cols"]) for o in occasions)
+        total_kurzus_max = sum(sum(get_metric_max(c) for c, _, _ in o["cols"]) for o in occasions)
 
         summary_rows = []
         for item in all_occ_status:
@@ -312,9 +342,10 @@ if diak_nev_input:
                 "Alkalom": occ["name"],
                 "Dátum": item["raw_date"] if item["raw_date"] else "-",
                 "Státusz": st_text,
-                "J": "-", "A": "-", "B": "-", "V1": "-", "V2": "-",
-                "Pontszám": "-"
             }
+            for code in active_codes:
+                row_data[code] = "-"
+            row_data["Pontszám"] = "-"
 
             occ_sum = 0
             has_points = False
@@ -327,20 +358,21 @@ if diak_nev_input:
                         f = float(val_str)
                         pts = int(f) if f.is_integer() else f
                         row_data[code] = str(pts)
-                        cat_totals[code] += pts
+                        cat_totals[code] = cat_totals.get(code, 0) + pts
                         total_earned += pts
                         occ_sum += pts
                         has_points = True
                     except ValueError:
                         row_data[code] = val_str
 
-            # Eddig megszerezhetőnek számít az alkalom, ha lezárult, ma van, vagy már van rá rögzített pont
+            # Eddig megszerezhetőnek számít, ha lezárult, ma van, vagy van már pontja
             is_eddig = (item["status"] in ["open", "closed"]) or has_points
 
             if is_eddig:
-                total_eddig_max += len(occ["cols"])
                 for code, col_idx, label in occ["cols"]:
-                    cat_max_eddig[code] += 1
+                    c_max = get_metric_max(code)
+                    total_eddig_max += c_max
+                    cat_max_eddig[code] = cat_max_eddig.get(code, 0) + c_max
 
             if has_points:
                 formatted_occ_sum = int(occ_sum) if isinstance(occ_sum, float) and occ_sum.is_integer() else occ_sum
@@ -358,32 +390,45 @@ if diak_nev_input:
             szazalek = 0
             status_text = f"{t_earned_disp} pont (még nincs lezárt óra)"
 
-        # Kiemelt KPI mérőszámok
-        m_col1, m_col2, m_col3, m_col4, m_col5 = st.columns(5)
-        m_col1.metric("Jelenlegi állás", f"{t_earned_disp} / {total_eddig_max}", f"{szazalek}%")
-        m_col2.metric("Jelenlét (J)", f"{cat_totals['J']} / {cat_max_eddig['J']}" if cat_max_eddig['J'] > 0 else "-")
-        m_col3.metric("Aktivitás (A)", f"{cat_totals['A']} / {cat_max_eddig['A']}" if cat_max_eddig['A'] > 0 else "-")
-        m_col4.metric("Brit tudósok (B)", f"{cat_totals['B']} / {cat_max_eddig['B']}" if cat_max_eddig['B'] > 0 else "-")
-        vizsga_eddig_max = cat_max_eddig['V1'] + cat_max_eddig['V2']
-        m_col5.metric("Vizsgák (V1+V2)", f"{cat_totals['V1'] + cat_totals['V2']} / {vizsga_eddig_max}" if vizsga_eddig_max > 0 else "-")
+        # Kiemelt KPI kártyák dinamikus felépítése az adott csoport oszlopai alapján
+        kpi_cards = [("Jelenlegi állás", f"{t_earned_disp} / {total_eddig_max}", f"{szazalek}%")]
+        if "J" in active_codes:
+            kpi_cards.append(("Jelenlét (J)", f"{cat_totals['J']} / {cat_max_eddig['J']}" if cat_max_eddig.get('J', 0) > 0 else "-", None))
+        if "A" in active_codes:
+            kpi_cards.append(("Aktivitás (A)", f"{cat_totals['A']} / {cat_max_eddig['A']}" if cat_max_eddig.get('A', 0) > 0 else "-", None))
+        if "B" in active_codes:
+            kpi_cards.append(("Brit tudósok (B)", f"{cat_totals['B']} / {cat_max_eddig['B']}" if cat_max_eddig.get('B', 0) > 0 else "-", None))
+        if "P" in active_codes or "T" in active_codes:
+            pt_earned = cat_totals.get('P', 0) + cat_totals.get('T', 0)
+            pt_max = cat_max_eddig.get('P', 0) + cat_max_eddig.get('T', 0)
+            kpi_cards.append(("Projekt + Társas", f"{pt_earned} / {pt_max}" if pt_max > 0 else "-", None))
+        if "V1" in active_codes or "V2" in active_codes:
+            v_earned = cat_totals.get('V1', 0) + cat_totals.get('V2', 0)
+            v_max = cat_max_eddig.get('V1', 0) + cat_max_eddig.get('V2', 0)
+            kpi_cards.append(("Vizsgák (V1+V2)", f"{v_earned} / {v_max}" if v_max > 0 else "-", None))
 
-        st.caption(f"📌 A százalék az eddig lezajlott vagy mai órákon megszerezhető maximumhoz ({total_eddig_max} pont) viszonyítva értendő. A teljes kurzus 22 alkalma összesen {total_kurzus_max} pontos.")
+        cols_kpi = st.columns(len(kpi_cards))
+        for idx, card in enumerate(kpi_cards):
+            title, val, delta = card
+            if delta:
+                cols_kpi[idx].metric(title, val, delta)
+            else:
+                cols_kpi[idx].metric(title, val)
 
-        def fmt_cat_cell(code):
-            return f"{cat_totals[code]} / {cat_max_eddig[code]}" if cat_max_eddig[code] > 0 else "-"
+        st.caption(f"📌 A százalék az eddig lezajlott vagy mai órákon megszerezhető maximumhoz ({total_eddig_max} pont) viszonyítva értendő. A teljes kurzus összesen {total_kurzus_max} pontos.")
 
-        # Alsó összegző sor
+        # Alsó összegző sor a táblázathoz
         total_row = {
             "Alkalom": "⭐ ÖSSZESEN",
             "Dátum": "-",
             "Státusz": status_text,
-            "J": fmt_cat_cell("J"),
-            "A": fmt_cat_cell("A"),
-            "B": fmt_cat_cell("B"),
-            "V1": fmt_cat_cell("V1"),
-            "V2": fmt_cat_cell("V2"),
-            "Pontszám": f"{t_earned_disp} pont"
         }
+        for code in active_codes:
+            if cat_max_eddig.get(code, 0) > 0:
+                total_row[code] = f"{cat_totals.get(code, 0)} / {cat_max_eddig.get(code, 0)}"
+            else:
+                total_row[code] = "-"
+        total_row["Pontszám"] = f"{t_earned_disp} pont"
         summary_rows.append(total_row)
 
         df_summary = pd.DataFrame(summary_rows)
