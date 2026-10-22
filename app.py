@@ -37,7 +37,7 @@ SCORE_OPTIONS = {
 EGYEDI_UZENETEK = {
     "csik bertalan": "Csumi Csicska❤️❤️❤️",
     "tóth antal": "Szeva Szívós❤️❤️❤️",
-    "szokolay katalin": "Szia Somaaaaa❤️❤️❤️"
+    "szokolay soma": "Szia Somaaaaa❤️❤️❤️"
 }
 
 # A maximum pontot közvetlenül a SCORE_OPTIONS-ból vesszük:
