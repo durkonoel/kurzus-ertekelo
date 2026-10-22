@@ -395,11 +395,19 @@ if csoport and diak_nev_input:
         # CSS stílus a levágás (...) kiküszöbölésére
         st.markdown("""
         <style>
-        div[data-testid="stMetricValue"] {
-            font-size: 1.5rem !important;
+  div[data-testid="stMetricValue"] {
+            font-size: 1.6rem !important;
             overflow: visible !important;
             text-overflow: unset !important;
             white-space: normal !important;
+        }
+        div[data-testid="stMetricDelta"] {
+            font-size: 1.35rem !important;
+            font-weight: bold !important;
+        }
+        div[data-testid="stMetricDelta"] svg {
+            width: 1.35rem !important;
+            height: 1.35rem !important;
         }
         div[data-testid="stMetricLabel"] {
             overflow: visible !important;
