@@ -402,7 +402,7 @@ if csoport and diak_nev_input:
             white-space: normal !important;
         }
         div[data-testid="stMetricDelta"] {
-            font-size: 1.35rem !important;
+            font-size: 1.5rem !important;
             font-weight: bold !important;
         }
         div[data-testid="stMetricDelta"] svg {
