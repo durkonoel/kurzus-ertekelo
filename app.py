@@ -34,6 +34,11 @@ SCORE_OPTIONS = {
     "T": [0, 1, 2]
 }
 
+EGYEDI_UZENETEK = {
+    "Csik Bertalan": "Csumi Csicska❤️❤️❤️",
+    "Tóth Antal": "Szeva Szívós❤️❤️❤️",
+    "Szokolay Katalin": "Szia Somaaaaa❤️❤️❤️"
+
 # A maximum pontot közvetlenül a SCORE_OPTIONS-ból vesszük:
 def get_metric_max(code):
     return max(SCORE_OPTIONS.get(code, [0, 1]))
@@ -238,6 +243,9 @@ if csoport and diak_nev_input:
         st.stop()
 
     st.success(f"Bejelentkezve: **{real_student_name}** | Csoport: **{csoport}**")
+    
+    if keresett_nev in EGYEDI_UZENETEK:
+        st.info(f"💌 **Személyes üzenet:** {EGYEDI_UZENETEK[keresett_nev]}")
 
     # Dátumok és státuszok kiértékelése
     ma = get_today_date()
@@ -402,7 +410,7 @@ if csoport and diak_nev_input:
             white-space: normal !important;
         }
         div[data-testid="stMetricDelta"] {
-            font-size: 1.5rem !important;
+            font-size: 1.8rem !important;
             font-weight: bold !important;
         }
         div[data-testid="stMetricDelta"] svg {
