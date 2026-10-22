@@ -35,9 +35,9 @@ SCORE_OPTIONS = {
 }
 
 EGYEDI_UZENETEK = {
-    "Csik Bertalan": "Csumi Csicska❤️❤️❤️",
-    "Tóth Antal": "Szeva Szívós❤️❤️❤️",
-    "Szokolay Katalin": "Szia Somaaaaa❤️❤️❤️"
+    "csik bertalan": "Csumi Csicska❤️❤️❤️",
+    "tóth antal": "Szeva Szívós❤️❤️❤️",
+    "szokolay katalin": "Szia Somaaaaa❤️❤️❤️"
 }
 
 # A maximum pontot közvetlenül a SCORE_OPTIONS-ból vesszük:
@@ -246,7 +246,7 @@ if csoport and diak_nev_input:
     st.success(f"Bejelentkezve: **{real_student_name}** | Csoport: **{csoport}**")
     
     if keresett_nev in EGYEDI_UZENETEK:
-        st.info(f"💌 **Személyes üzenet:** {EGYEDI_UZENETEK[keresett_nev]}")
+        st.balloons(f"💌 **Személyes üzenet:** {EGYEDI_UZENETEK[keresett_nev]}")
 
     # Dátumok és státuszok kiértékelése
     ma = get_today_date()
