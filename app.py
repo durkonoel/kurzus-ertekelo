@@ -408,7 +408,7 @@ if csoport and diak_nev_input:
         </style>
         """, unsafe_allow_html=True)
         
-        kpi_cards = [("Jelenlegi állás", f"{t_earned_disp}/{total_eddig_max}, f"{szazalek}%")]
+        kpi_cards = [("Jelenlegi állás", f"{t_earned_disp}/{total_eddig_max}, f"{szazalek}%)]
         if "J" in active_codes:
             kpi_cards.append(("Jelenlét (J)", f"{cat_totals['J']} / {cat_max_eddig['J']}" if cat_max_eddig.get('J', 0) > 0 else "-", None))
         if "A" in active_codes:
