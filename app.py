@@ -246,7 +246,7 @@ if csoport and diak_nev_input:
     st.success(f"Bejelentkezve: **{real_student_name}** | Csoport: **{csoport}**")
     
     if keresett_nev in EGYEDI_UZENETEK:
-        st.info(f"💌 **Személyes üzenet:** {EGYEDI_UZENETEK[keresett_nev]}")
+        st.info(f"💌: {EGYEDI_UZENETEK[keresett_nev]}")
         st.balloons()
 
     # Dátumok és státuszok kiértékelése
