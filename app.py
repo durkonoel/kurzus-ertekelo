@@ -38,6 +38,7 @@ EGYEDI_UZENETEK = {
     "Csik Bertalan": "Csumi Csicska❤️❤️❤️",
     "Tóth Antal": "Szeva Szívós❤️❤️❤️",
     "Szokolay Katalin": "Szia Somaaaaa❤️❤️❤️"
+}
 
 # A maximum pontot közvetlenül a SCORE_OPTIONS-ból vesszük:
 def get_metric_max(code):
