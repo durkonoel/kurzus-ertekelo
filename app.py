@@ -36,7 +36,7 @@ SCORE_OPTIONS = {
 
 EGYEDI_UZENETEK = {
     "csik bertalan": "Csumi Csicska💪💉❤️",
-    "tóth antal": "Szeva Szívós🚬🌱💪❤️",
+    "tóth antal gyula": "Szeva Szívós🚬🌱💪❤️",
     "szokolay soma": "Szia Somaaaaa❤️❤️❤️",
     "tölgyes tünde": "Szia Tundeee🖤🖤🖤",
     "kühne sára": "Szia Sáriii🩷🩷🩷"
