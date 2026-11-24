@@ -58,7 +58,7 @@ EGYEDI_UZENETEK = {
     "tölgyes tünde": "Szia Tundeee, legyen szép napod!🖤🖤🖤",
     "kühne sára": "Szia Sáriii, legyen szép napod!🩷🩷🩷",
     "görgényi antónia noémi": "Szia Antónia, legyen szép napod!❤️❤️❤️",
-    "gál alexandra": "Szia Lexi, legyen szép napod!❤️💙💛"
+    "gál lexi": "Szia Lexi, legyen szép napod!❤️💙💛"
 }
 
 # A maximum pontot közvetlenül a SCORE_OPTIONS-ból vesszük:
