@@ -47,13 +47,15 @@ EGYEDI_UZENETEK = {
 def get_metric_max(code):
     return max(SCORE_OPTIONS.get(code, [0, 1]))
 
-def nev_tisztitas(szoveg):
-    """Kisbetűsít, egységesíti az ékezeteket, és minden felesleges/dupla szóközt összevon."""
+def nev_kompakt(szoveg):
+    """Kisbetűsít, eltávolítja az ékezeteket, minden szóközt és láthatatlan karaktert."""
     if not szoveg:
         return ""
-    s = unicodedata.normalize("NFC", str(szoveg))
+    s = unicodedata.normalize("NFD", str(szoveg))
+    s = "".join(c for c in s if unicodedata.category(c) != "Mn")
     s = s.replace("\u200b", "").replace("\ufeff", "")
-    return " ".join(s.strip().lower().split())
+    s = re.sub(r"\s+", "", s)
+    return s.lower()
 
 # ==============================================================================
 # 2. SEGÉDFÜGGVÉNYEK ÉS HITELESÍTÉS
@@ -236,8 +238,8 @@ if csoport and diak_nev_input:
     occasions = parse_occasions_from_sheet(all_values)
 
     # Diák keresése a névsorban (4. sortól lefelé)
-    keresett_nev = nev_tisztitas(diak_nev_input)
-    keresett_szavak = keresett_nev.split()
+    # Nem számít a kis/nagybetű, az ékezet és a szóközök sem (előtte, utána, közötte vagy elhagyva)
+    keresett_nev = nev_kompakt(diak_nev_input)
     student_row_idx = None
     real_student_name = ""
     student_scores_row = []
@@ -246,19 +248,21 @@ if csoport and diak_nev_input:
     for r_idx in range(3, len(all_values)):
         row = all_values[r_idx]
         if row and row[0]:
-            sor_nev_tiszta = nev_tisztitas(row[0])
-            sor_szavak = sor_nev_tiszta.split()
+            sor_szavak = str(row[0]).strip().split()
+            sor_teljes_kompakt = nev_kompakt(row[0])
 
-            # 1. Pontos egyezés (elsőbbséget élvez)
-            if sor_nev_tiszta == keresett_nev:
+            # 1. Teljes név egyezése (ékezet- és szóközmentesen)
+            if sor_teljes_kompakt == keresett_nev:
                 student_row_idx = r_idx + 1  # 1-alapú index
-                real_student_name = " ".join(str(row[0]).split())
+                real_student_name = " ".join(sor_szavak)
                 student_scores_row = row
                 break
 
-            # 2. Három (vagy több) nevű diák esetén az első két név egyezése
-            if len(keresett_szavak) == 2 and len(sor_szavak) >= 3 and sor_szavak[:2] == keresett_szavak:
-                reszleges_talalatok.append((r_idx + 1, " ".join(str(row[0]).split()), row))
+            # 2. Három (vagy több) nevű diák esetén az első két név egyezése (ékezet- és szóközmentesen)
+            if len(sor_szavak) >= 3:
+                elso_ketto_kompakt = nev_kompakt("".join(sor_szavak[:2]))
+                if elso_ketto_kompakt == keresett_nev:
+                    reszleges_talalatok.append((r_idx + 1, " ".join(sor_szavak), row))
 
     if not student_row_idx:
         if len(reszleges_talalatok) == 1:
@@ -272,9 +276,9 @@ if csoport and diak_nev_input:
 
     st.success(f"Bejelentkezve: **{real_student_name}** | Csoport: **{csoport}**")
     
-    # Egyedi üzenet keresése (akkor is működik, ha a diák csak az első két nevével lépett be)
-    tiszta_teljes_nev = nev_tisztitas(real_student_name)
-    normalizalt_uzenetek = {nev_tisztitas(k): v for k, v in EGYEDI_UZENETEK.items()}
+    # Egyedi üzenet keresése (ékezet- és szóközmentesen, rövidített belépésnél is)
+    tiszta_teljes_nev = nev_kompakt(real_student_name)
+    normalizalt_uzenetek = {nev_kompakt(k): v for k, v in EGYEDI_UZENETEK.items()}
     uzenet = normalizalt_uzenetek.get(tiszta_teljes_nev) or normalizalt_uzenetek.get(keresett_nev)
     if uzenet:
         st.info(f"💌 {uzenet}")
@@ -433,7 +437,6 @@ if csoport and diak_nev_input:
         # ==============================================================================
         # KIEMELT KPI KÁRTYÁK (SZÖVEGLEVÁGÁS ELLENI VÉDELEMMEL, TÖBB SORBAN)
         # ==============================================================================
-        # CSS stílus a levágás (...) kiküszöbölésére
         st.markdown("""
         <style>
         div[data-testid="stMetricValue"] {
