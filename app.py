@@ -6,6 +6,7 @@ import json
 from datetime import datetime, date
 import zoneinfo
 import re
+import unicodedata
 
 # ==============================================================================
 # 1. BEÁLLÍTÁSOK
@@ -45,6 +46,14 @@ EGYEDI_UZENETEK = {
 # A maximum pontot közvetlenül a SCORE_OPTIONS-ból vesszük:
 def get_metric_max(code):
     return max(SCORE_OPTIONS.get(code, [0, 1]))
+
+def nev_tisztitas(szoveg):
+    """Kisbetűsít, egységesíti az ékezeteket, és minden felesleges/dupla szóközt összevon."""
+    if not szoveg:
+        return ""
+    s = unicodedata.normalize("NFC", str(szoveg))
+    s = s.replace("\u200b", "").replace("\ufeff", "")
+    return " ".join(s.strip().lower().split())
 
 # ==============================================================================
 # 2. SEGÉDFÜGGVÉNYEK ÉS HITELESÍTÉS
@@ -194,7 +203,7 @@ csoport = st.selectbox(
 
 # 2. Jelszóbeírás közvetlenül alatta
 diak_nev_input = st.text_input(
-    "2. Jelszó (teljes név):", 
+    "2. Jelszó (teljes név, vagy 3 név esetén az első kettő):", 
     placeholder="Cérna Géza"
 )
 
@@ -227,28 +236,48 @@ if csoport and diak_nev_input:
     occasions = parse_occasions_from_sheet(all_values)
 
     # Diák keresése a névsorban (4. sortól lefelé)
-    keresett_nev = diak_nev_input.strip().lower()
+    keresett_nev = nev_tisztitas(diak_nev_input)
+    keresett_szavak = keresett_nev.split()
     student_row_idx = None
     real_student_name = ""
     student_scores_row = []
+    reszleges_talalatok = []
 
     for r_idx in range(3, len(all_values)):
         row = all_values[r_idx]
         if row and row[0]:
-            if str(row[0]).strip().lower() == keresett_nev:
+            sor_nev_tiszta = nev_tisztitas(row[0])
+            sor_szavak = sor_nev_tiszta.split()
+
+            # 1. Pontos egyezés (elsőbbséget élvez)
+            if sor_nev_tiszta == keresett_nev:
                 student_row_idx = r_idx + 1  # 1-alapú index
-                real_student_name = str(row[0]).strip()
+                real_student_name = " ".join(str(row[0]).split())
                 student_scores_row = row
                 break
 
+            # 2. Három (vagy több) nevű diák esetén az első két név egyezése
+            if len(keresett_szavak) == 2 and len(sor_szavak) >= 3 and sor_szavak[:2] == keresett_szavak:
+                reszleges_talalatok.append((r_idx + 1, " ".join(str(row[0]).split()), row))
+
     if not student_row_idx:
-        st.error(f"Nem található '{diak_nev_input}' nevű diák a(z) **{csoport}** csoportban. Kérlek, ellenőrizd az írásmódot és a csoportot!")
-        st.stop()
+        if len(reszleges_talalatok) == 1:
+            student_row_idx, real_student_name, student_scores_row = reszleges_talalatok[0]
+        elif len(reszleges_talalatok) > 1:
+            st.error("Több diák is szerepel ezzel a két névvel a csoportban. Kérlek, írd be a teljes (háromrészes) nevedet!")
+            st.stop()
+        else:
+            st.error(f"Nem található '{diak_nev_input}' nevű diák a(z) **{csoport}** csoportban. Kérlek, ellenőrizd az írásmódot és a csoportot!")
+            st.stop()
 
     st.success(f"Bejelentkezve: **{real_student_name}** | Csoport: **{csoport}**")
     
-    if keresett_nev in EGYEDI_UZENETEK:
-        st.info(f"💌 {EGYEDI_UZENETEK[keresett_nev]}")
+    # Egyedi üzenet keresése (akkor is működik, ha a diák csak az első két nevével lépett be)
+    tiszta_teljes_nev = nev_tisztitas(real_student_name)
+    normalizalt_uzenetek = {nev_tisztitas(k): v for k, v in EGYEDI_UZENETEK.items()}
+    uzenet = normalizalt_uzenetek.get(tiszta_teljes_nev) or normalizalt_uzenetek.get(keresett_nev)
+    if uzenet:
+        st.info(f"💌 {uzenet}")
         st.balloons()
 
     # Dátumok és státuszok kiértékelése
@@ -407,7 +436,7 @@ if csoport and diak_nev_input:
         # CSS stílus a levágás (...) kiküszöbölésére
         st.markdown("""
         <style>
-  div[data-testid="stMetricValue"] {
+        div[data-testid="stMetricValue"] {
             font-size: 1.6rem !important;
             overflow: visible !important;
             text-overflow: unset !important;
