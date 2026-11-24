@@ -52,11 +52,13 @@ TISZTA_NAP_MERFOLDKOVEK = {
 }
 
 EGYEDI_UZENETEK = {
-    "csik bertalan": "Csumi Csicska💪💉❤️",
-    "tóth antal gyula": "Szia Anti! Már **{napok}** napja tiszta vagy! Büszke vagyok rád, csak így tovább! 💪❤️",
-    "szokolay soma": "Szia Somaaaaa❤️❤️❤️",
-    "tölgyes tünde": "Szia Tundeee🖤🖤🖤",
-    "kühne sára": "Szia Sáriii🩷🩷🩷"
+    "csik bertalan": "Csumi Csicska, menjél emelt matekra!!!💪💉❤️",
+    "tóth antal gyula": "Szeva Tesó! Már **{napok}** napja tiszta vagy! Kibaszott büszke vagyok rád, csak így tovább!!!💪❤️",
+    "szokolay soma": "Szia Somaaaaa, legyen szép napod, menni fog minden!❤️❤️❤️",
+    "tölgyes tünde": "Szia Tundeee, legyen szép napod!🖤🖤🖤",
+    "kühne sára": "Szia Sáriii, legyen szép napod!🩷🩷🩷",
+    "görgényi antónia noémi": "Szia Antónia, legyen szép napod!❤️❤️❤️",
+    "gál alexandra": "Szia Lexi, legyen szép napod!❤️💙💛"
 }
 
 # A maximum pontot közvetlenül a SCORE_OPTIONS-ból vesszük:
