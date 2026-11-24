@@ -35,9 +35,25 @@ SCORE_OPTIONS = {
     "T": [0, 1, 2]
 }
 
+# Tóth Antal tiszta napjainak kezdődátuma: date(ÉV, HÓNAP, NAP) – írd át a pontos dátumra!
+TOTH_ANTAL_TISZTA_KEZDET = date(2026, 11, 3)
+
+# Különleges mérföldkő üzenetek az adott tiszta napok számánál:
+TISZTA_NAP_MERFOLDKOVEK = {
+    7: "🏆 **1 HÉT (7 nap)!** Hatalmas gratuláció az első héthez, Tesó! Csak így tovább! 💪❤️",
+    14: "🏆 **2 HÉT (14 nap)!** Két teljes tiszta hét mögötted van, elképesztően erős vagy! 💪❤️",
+    30: "🏆 **1 HÓNAP (30 nap)!** Óriási mérföldkő, 30 tiszta nap bazdki! Nagyon büszke vagyok rád Tesó! Keress meg, mert ezért már jár egy redbull! 🎉💪❤️",
+    50: "🏆 **50 TISZTA NAP!** Félszáz napja kitartasz geci, ez hatalmas teljesítmény, nagyon fasza vagy! 🎉💪❤️",
+    60: "🏆 **2 HÓNAP, 60 kurva nap!** kibaszott jó vagy, két hónap tiszta fejjel – csak felfelé, így tovább Tesó! 🎉💪❤️",
+    90: "🏆 **3 HÓNAP (90 nap)!** Három teljes hónap! Fantasztikus, amit véghez viszel! Ez óriási mérföldkő, innen már egyre faszább lesz minden! 🔥💪❤️",
+    100: "🏆 **100 NAP!** Háromjegyű szám – elképesztő mérföldkő, hatalmas respekt! 🎆💪❤️",
+    180: "🏆 **FÉL ÉV (180 nap)!** 180 tiszta nap, hihetetlen kitartás! 🌟💪❤️",
+    365: "🏆 **1 TELJES ÉV (365 nap)!** Egy egész év tisztán – hatalmas gratuláció, Anti! 👑🎉❤️"
+}
+
 EGYEDI_UZENETEK = {
     "csik bertalan": "Csumi Csicska💪💉❤️",
-    "tóth antal gyula": "Szeva Szívós🚬🌱💪❤️",
+    "tóth antal gyula": "Szia Anti! Már **{napok}** napja tiszta vagy! Büszke vagyok rád, csak így tovább! 💪❤️",
     "szokolay soma": "Szia Somaaaaa❤️❤️❤️",
     "tölgyes tünde": "Szia Tundeee🖤🖤🖤",
     "kühne sára": "Szia Sáriii🩷🩷🩷"
@@ -275,17 +291,26 @@ if csoport and diak_nev_input:
             st.stop()
 
     st.success(f"Bejelentkezve: **{real_student_name}** | Csoport: **{csoport}**")
-    
+
+    # Mai dátum lekérése (magyar időzóna)
+    ma = get_today_date()
+
     # Egyedi üzenet keresése (ékezet- és szóközmentesen, rövidített belépésnél is)
     tiszta_teljes_nev = nev_kompakt(real_student_name)
     normalizalt_uzenetek = {nev_kompakt(k): v for k, v in EGYEDI_UZENETEK.items()}
     uzenet = normalizalt_uzenetek.get(tiszta_teljes_nev) or normalizalt_uzenetek.get(keresett_nev)
     if uzenet:
-        st.info(f"💌 {uzenet}")
+        if "{napok}" in uzenet:
+            tiszta_napok = max(0, (ma - TOTH_ANTAL_TISZTA_KEZDET).days+1)
+            if tiszta_napok in TISZTA_NAP_MERFOLDKOVEK:
+                st.success(TISZTA_NAP_MERFOLDKOVEK[tiszta_napok].format(napok=tiszta_napok))
+            else:
+                st.info(f"💌 {uzenet.format(napok=tiszta_napok)}")
+        else:
+            st.info(f"💌 {uzenet}")
         st.balloons()
 
     # Dátumok és státuszok kiértékelése
-    ma = get_today_date()
     active_today_occ = None
     all_occ_status = []
 
